@@ -15,14 +15,14 @@ section .text
 ; Modifica: EAX, EBX, ECX, EDX
 ; ----------------------------------------------------------
 scan_num:    
-    mov eax, 3                          ; Comenta
-    mov ebx, 0                          ; Comenta
-    mov ecx, number_input               ; Comenta
-    mov edx, 12                         ; Comenta
+    mov eax, 3                          ; Llamada al sistema para leer
+    mov ebx, 0                          ; Entrada estándar (desde terminal)
+    mov ecx, number_input               ; Guarda en ecx la dirección de memoria en donde se reservó el espacio para el número de entrada
+    mov edx, 12                         ; Guarda en edx la cantidad máxima de bytes por leer
     int 0x80                            
 
     mov esi, input_buffer               ; ESI apunta al buffer de entrada
-    call stoi                           ; Comenta
+    call stoi                           ; Convierte una cadena ASCII a entero
     ret
 
 ; ----------------------------------------------------------
@@ -31,17 +31,17 @@ scan_num:
 ; Modifica: EAX, EBX, ECX, EDX
 ; ----------------------------------------------------------
 print_str:
-    mov edx, 0                  ; Inicia el contador de longitu en 0
+    mov edx, 0                  ; Inicia el contador de longitud en 0
 .calc_len:
-    cmp byte [esi+ edx], 0      ; Compara con NULL terminardor
-    je .print                   ; Comenta
-    inc edx                     ; Comenta
+    cmp byte [esi+ edx], 0      ; Compara con NULL terminador
+    je .print                   ; Si es NULL (el final de cadena), salta a la función que imprime
+    inc edx                     ; Incrementa el contador para evaluar el siguiente caracter
     jmp .calc_len               
 .print:
-    mov eax, 4                  ; Comenta
-    mov ebx, 1                  ; Comenta
-    mov ecx, esi                ; Comenta
-    int 0x80                    ; Comenta
+    mov eax, 4                  ; Llamada al sistema para imprimir
+    mov ebx, 1                  ; Impresión estándar (a terminal)
+    mov ecx, esi                ; Guarda en ecx la dirección de la cadena a imprimir
+    int 0x80                    ; Imprime la cadena en la terminal
     ret
 
 
@@ -55,10 +55,10 @@ print_num:
     push edi                    ; Preserva EDI
     mov edi, number_output      ; Usa number_output para convertirlo en cadena
 
-    call itos                   ; 
-    mov esi, output_buffer      ; Comenta
-    call print_str              ; Comenta
-    pop edi                     ; Comenta
+    call itos                   ; Llama a la función que convierte un entero en cadena ASCII
+    mov esi, output_buffer      ; ESI apunta al buffer de salida
+    call print_str              ; Imprime la cadena terminada en NULL
+    pop edi                     ; Saca el EDI de la pila
     ret
 
 
@@ -67,10 +67,10 @@ print_num:
 ; Modifica: EAX, EBX, ECX, EDX
 ; ----------------------------------------------------------
 print_newline:
-    mov eax, 4                  ; Comenta
-    mov ebx, 1                  ; Comenta
-    mov ecx, newline            ; Comenta
-    mov edx, 1                  ; Comenta
+    mov eax, 4                  ; Llamada al sistema para imprimir
+    mov ebx, 1                  ; Impresión estándar (a terminal)
+    mov ecx, newline            ; Guarda en ecx el caracter de nueva línea en ASCII y un caracter nulo (término de cadena)
+    mov edx, 1                  ; Guarda en edx el número de bytes por escribir (1)
     int 0x80                    
     ret
 
@@ -87,15 +87,15 @@ stoi:
 .convert:
     ; movz - Move with Zero Extend: Copia un valor pequeño en un registro grande rellenando con ceros
     movzx edx, byte [esi+ecx]           ; Lee siguiente caracter de la cadena
-    cmp dl, 0x0A                        ; Comenta
-    je ..convert_done                   ; Comenta
-    cmp dl, '0'                         ; Comenta
-    jb .convert_done                    ; Comenta
-    cmp dl, '9'                         ; Comenta
-    ja .convert_done                    ; Comenta
-    sub dl, '0'                         ; Comenta
-    imul eax, 10                        ; Comenta
-    add eax, edx                        ; Comenta
+    cmp dl, 0x0A                        ; Compara el valor de dl con el salto de línea (final de la cadena)
+    je ..convert_done                   ; Toda la cadena ASCII ya fue convertida a enteros, y termina la función
+    cmp dl, '0'                         ; Compara el contenido de dl con el caracter '0'
+    jb .convert_done                    ; Si dl es menor a '0', termina la función
+    cmp dl, '9'                         ; Compara el contenido de dl con el caracter '9'
+    ja .convert_done                    ; Si dl es mayor que '9', termina la función
+    sub dl, '0'                         ; Convierte el contenido de dl a número 
+    imul eax, 10                        ; Multiplica el número convertido por 10
+    add eax, edx                        ; Suma el dígito recientemente convertido al número final
     inc ecx                             ; Avanza al siguiente caracter
     jmp .convert                     
 .convert_done:
@@ -109,11 +109,11 @@ stoi:
 ; Modifica: EAX, EBX, ECX, EDX, EDI
 ; ----------------------------------------------------------
 itos:
-    mov ebx, 10                 ; Comenta
+    mov ebx, 10                 ; Guarda en ecx la base para dividir
     xor ecx, ecx                ; Limpia el contador de dígitos
 
-    test eax, eax               ; Comenta
-    jnz .convertir              ; Comenta
+    test eax, eax               ; Verifica que eax = 0
+    jnz .convertir              ; Si no es cero, salta a convertir
 
     ; Caso especial para cero
     mov byte [edi], '0'         ; Almacena '0' en el buffer
@@ -122,13 +122,13 @@ itos:
     ret                        
 
 .convert:
-    xor edx, edx                ; Comenta
-    div ebx                     ; Comenta
-    add dl, '0'                 ; Comenta
+    xor edx, edx                ; Limpia edx para la división
+    div ebx                     ; eax = eax / 10
+    add dl, '0'                 ; Convierte el residuo de la división en caracter
     push dx                     ; Guarda el dígito en la pila
-    inc ecx                     ; Comenta
-    test eax, eax               ; Comenta
-    jnz .convert                ; Comenta
+    inc ecx                     ; Incrementa el contador de dígitos
+    test eax, eax               ; Verifica que eax no sea 0 (aún tenga dígitos)
+    jnz .convert                ; Si tiene dígitos, continúa dividiendo
 
     ; Para este ciclo es importante que el contador del ciclo este almacenado en ecx
 .reverse:               
